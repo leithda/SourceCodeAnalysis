@@ -720,14 +720,14 @@ public class ArrayList<E> extends AbstractList<E>
 
     // AbstractList迭代器的优化版
     private class Itr implements Iterator<E> {
-        int cursor;       // 下一个返回元素的索引
-        int lastRet = -1; // 新增：上次迭代过程中索引的位置。删除:-1
+        int cursor;       // 迭代元素位置
+        int lastRet = -1; // 上次迭代位置，-1表示迭代元素已被删除
         int expectedModCount = modCount;    // CAS 期望值
 
         Itr() {}
 
         /**
-         * 判断是否还有元素可以迭代
+         * 判断是否可以向后迭代
          */
         public boolean hasNext() {
             return cursor != size;
@@ -735,7 +735,7 @@ public class ArrayList<E> extends AbstractList<E>
 
         @SuppressWarnings("unchecked")
         /**
-         * 获取迭代元素
+         * 获取向后迭代元素
          */
         public E next() {
             // 版本号检查，避免迭代过程中数组结构发生变化
@@ -810,7 +810,7 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     /**
-     * An optimized version of AbstractList.ListItr
+     * 双向访问迭代器，支持指定位置迭代
      */
     private class ListItr extends Itr implements ListIterator<E> {
         ListItr(int index) {
@@ -818,21 +818,35 @@ public class ArrayList<E> extends AbstractList<E>
             cursor = index;
         }
 
+        /**
+         * 判断是否可以向前迭代
+         */
         public boolean hasPrevious() {
             return cursor != 0;
         }
 
+        /**
+         * 获取迭代元素位置
+         */
         public int nextIndex() {
             return cursor;
         }
 
+        /**
+         * 获取迭代元素前一位置
+         */
         public int previousIndex() {
             return cursor - 1;
         }
 
         @SuppressWarnings("unchecked")
+        /**
+         * 获取向前迭代元素
+         */
         public E previous() {
-            checkForComodification();
+            checkForComodification();   // 版本号检查
+
+            // 获取迭代元素位置
             int i = cursor - 1;
             if (i < 0)
                 throw new NoSuchElementException();
