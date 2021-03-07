@@ -119,31 +119,41 @@ public class LinkedList<E>
     }
 
     /**
-     * Links e as first element.
+     * 头插法
      */
     private void linkFirst(E e) {
-        final Node<E> f = first;
-        final Node<E> newNode = new Node<>(null, e, f);
-        first = newNode;
+        final Node<E> f = first;    // 指向原头节点
+        final Node<E> newNode = new Node<>(null, e, f); // 生成新节点，且其后继节点设置为原头节点
+        first = newNode;    // 头节点设置为新节点
+        // 如果链表为看，设置为节点也为新节点；否则设置原头节点的前驱节点为新节点。
         if (f == null)
             last = newNode;
         else
             f.prev = newNode;
+        // 大小和版本变化
         size++;
         modCount++;
     }
 
     /**
-     * Links e as last element.
+     * 尾插法
      */
     void linkLast(E e) {
+        // 保存原尾节点
         final Node<E> l = last;
+
+        // 生成新节点，且其前驱节点为原尾节点
         final Node<E> newNode = new Node<>(l, e, null);
+
+        // 添加后的为节点为新节点
         last = newNode;
+
+        // 如果尾节点为空，表示链表为空，头节点也指向新节点，否则设置原尾节点的后继节点为新节点
         if (l == null)
             first = newNode;
         else
             l.next = newNode;
+        // 大小和版本更改
         size++;
         modCount++;
     }
@@ -165,26 +175,33 @@ public class LinkedList<E>
     }
 
     /**
-     * Unlinks non-null first node f.
+     * 从链表头删除
      */
     private E unlinkFirst(Node<E> f) {
-        // assert f == first && f != null;
+        // 保存删除前的元素，用于返回
         final E element = f.item;
+        // 记录删除节点的下一个节点
         final Node<E> next = f.next;
+        // 帮助GC回收头节点
         f.item = null;
         f.next = null; // help GC
+
+        // 头节点的下一个节点成为头节点
         first = next;
+
+        // next为空，表示删除元素后链表为空，尾节点置空。否则将新头节点的前驱节点置空
         if (next == null)
             last = null;
         else
             next.prev = null;
+        // 修改链表大小和版本
         size--;
         modCount++;
         return element;
     }
 
     /**
-     * Unlinks non-null last node l.
+     * 从链表尾部删除
      */
     private E unlinkLast(Node<E> l) {
         // assert l == last && l != null;
@@ -560,17 +577,17 @@ public class LinkedList<E>
     }
 
     /**
-     * Returns the (non-null) Node at the specified element index.
+     * 根据索引查询节点
      */
     Node<E> node(int index) {
         // assert isElementIndex(index);
 
-        if (index < (size >> 1)) {
+        if (index < (size >> 1)) {  // 如果节点位置位于链表前半部分
             Node<E> x = first;
             for (int i = 0; i < index; i++)
                 x = x.next;
             return x;
-        } else {
+        } else {    // 如果节点位置位于链表后半部分
             Node<E> x = last;
             for (int i = size - 1; i > index; i--)
                 x = x.prev;
@@ -867,55 +884,108 @@ public class LinkedList<E>
         return new ListItr(index);
     }
 
+    /**
+     * List的子类可以实现，支持双向遍历，向后遍历取当前迭代位置，向前取当前迭代前一位置。
+     */
     private class ListItr implements ListIterator<E> {
+
+        /**
+         * 记录上次迭代返回元素
+         */
         private Node<E> lastReturned;
+
+        /**
+         * 迭代元素
+         */
         private Node<E> next;
+
+        /**
+         * 迭代位置
+         */
         private int nextIndex;
+
+        /**
+         * 期望值
+         */
         private int expectedModCount = modCount;
 
+
+        /**
+         * 带参构造，可以指定索引进行迭代
+         */
         ListItr(int index) {
             // assert isPositionIndex(index);
             next = (index == size) ? null : node(index);
             nextIndex = index;
         }
 
+        /**
+         * 判断是否有后继节点
+         */
         public boolean hasNext() {
             return nextIndex < size;
         }
 
+        /**
+         * 获取后继节点
+         */
         public E next() {
             checkForComodification();
             if (!hasNext())
                 throw new NoSuchElementException();
-
+            // 记录上次迭代元素
             lastReturned = next;
+
+            // 更新下一迭代节点
             next = next.next;
+
+            // 向后迭代索引+1
             nextIndex++;
             return lastReturned.item;
         }
 
+        /**
+         * 判断是否有前驱节点
+         */
         public boolean hasPrevious() {
             return nextIndex > 0;
         }
 
+        /**
+         * 获取前驱节点
+         */
         public E previous() {
             checkForComodification();
             if (!hasPrevious())
                 throw new NoSuchElementException();
 
+            // next为空的情况是使用size初始化ListIterator并进行previous操作。注意这里每次获取元素后，lastReturned和next值相等。
             lastReturned = next = (next == null) ? last : next.prev;
+
+            // 更新迭代索引
             nextIndex--;
+
+            // 返回元素值
             return lastReturned.item;
         }
 
+        /**
+         * 获取向后迭代位置
+         */
         public int nextIndex() {
             return nextIndex;
         }
 
+        /**
+         * 获取向前迭代位置
+         */
         public int previousIndex() {
             return nextIndex - 1;
         }
 
+        /**
+         * 删除当前元素
+         */
         public void remove() {
             checkForComodification();
             if (lastReturned == null)
@@ -923,14 +993,19 @@ public class LinkedList<E>
 
             Node<E> lastNext = lastReturned.next;
             unlink(lastReturned);
-            if (next == lastReturned)
+
+            if (next == lastReturned)   // 向前遍历时，next = lastReturned
                 next = lastNext;
-            else
+            else    // 向后遍历时， next = lastReturned.next
                 nextIndex--;
+            // 帮助GC
             lastReturned = null;
-            expectedModCount++;
+            expectedModCount++; // 保持期望值一致
         }
 
+        /**
+         * 设置当前元素的值
+         */
         public void set(E e) {
             if (lastReturned == null)
                 throw new IllegalStateException();
@@ -938,6 +1013,9 @@ public class LinkedList<E>
             lastReturned.item = e;
         }
 
+        /**
+         * 当前迭代位置添加元素
+         */
         public void add(E e) {
             checkForComodification();
             lastReturned = null;
@@ -945,10 +1023,15 @@ public class LinkedList<E>
                 linkLast(e);
             else
                 linkBefore(e, next);
+            // 添加到next前，nextIndex+1
             nextIndex++;
+            // 保持期望一致
             expectedModCount++;
         }
 
+        /**
+         * forEach
+         */
         public void forEachRemaining(Consumer<? super E> action) {
             Objects.requireNonNull(action);
             while (modCount == expectedModCount && nextIndex < size) {
@@ -960,6 +1043,9 @@ public class LinkedList<E>
             checkForComodification();
         }
 
+        /**
+         * 检查版本号
+         */
         final void checkForComodification() {
             if (modCount != expectedModCount)
                 throw new ConcurrentModificationException();
@@ -967,8 +1053,17 @@ public class LinkedList<E>
     }
 
     private static class Node<E> {
+        /**
+         * 节点元素
+         */
         E item;
+        /**
+         * 后继节点
+         */
         Node<E> next;
+        /**
+         * 前驱节点
+         */
         Node<E> prev;
 
         Node(Node<E> prev, E element, Node<E> next) {
